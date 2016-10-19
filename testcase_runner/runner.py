@@ -18,6 +18,9 @@ Testcase = namedtuple("Testcase", "function args kwargs check_result")
 class TestCaseRunner:
     def __init__(self, root_directory, enable_logging=False):
         self.logger = None
+        if not os.path.isdir(root_directory):
+            raise NotADirectoryError("{} not found".format(root_directory))
+
         self.root_directory = root_directory
         self.test_cases = []
         self.discovered = {}
@@ -43,23 +46,30 @@ class TestCaseRunner:
                     )
                     if author not in self.results:
                         self.results[author] = {}
-                    self.results[author][testcase.function] = {
+
+                    self._save_run_result(author, testcase.function, {
                         "args": testcase.args,
                         "kwargs": testcase.kwargs,
                         "passed": passed,
                         "runtime_secs": runtime_secs,
-                        "exception": str(exception),
+                        "exception": str(exception) if isinstance(exception, Exception) else exception,
                         "result": result
-                    }
+                    })
                 else:
-                    self.results[author][testcase.function] = {
+                    self._save_run_result(author, testcase.function, {
                         "args": testcase.args,
                         "kwargs": testcase.kwargs,
                         "passed": False,
                         "runtime_secs": 0.0,
                         "exception": str(NameError("Function {} not found".format(testcase.function))),
                         "result": None
-                    }
+                    })
+
+    def _save_run_result(self, author, function, result):
+        if function in self.results[author]:
+            self.results[author][function].append(result)
+        else:
+            self.results[author][function] = [result]
 
     def _author_has_function(self, author, function_name):
         return function_name in self.discovered[author]
@@ -68,6 +78,12 @@ class TestCaseRunner:
         if mode == OUTPUT_JSON:
             import json
             stream.write(json.dumps(self.results, indent=4))
+        elif mode == OUTPUT_HTML:
+            import jinja2
+            with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "html", "index.html"), "r") as f:
+                template = f.read()
+            stream.write(jinja2.Template(template).render(data=self.results))
+
 
     def _run_single_case(self, func_to_run, args, kwargs, success_test):
         """
@@ -212,4 +228,17 @@ class TestCaseRunner:
 
 
 if __name__ == '__main__':
-    pass
+    runner = TestCaseRunner("./test_data", enable_logging=True)
+
+    runner.define_testcase("my_sum", lambda x: x == 3, 0, 1, 2)
+    runner.define_testcase("my_sum", lambda x: x == 15, 4, 5, 6)
+    runner.define_testcase("my_sum", lambda x: x == 0, -1, 0, 1)
+
+    runner.define_testcase("my_prod", lambda x: x == 10, 2, 5)
+    runner.define_testcase("my_prod", lambda x: x == -10, -2, 5)
+    runner.define_testcase("my_prod", lambda x: x == 100, 10, 10)
+    runner.define_testcase("my_prod", lambda x: x == 1000, 10, 10, 10)
+
+    runner.run_cases()
+    with open("index.html", "w") as f:
+        runner.output_result(OUTPUT_HTML, f)

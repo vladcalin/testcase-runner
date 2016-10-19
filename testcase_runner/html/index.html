@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Results</title>
+
+    <script src="result.js"></script>
+</head>
+<body>
+
+{% for author in data %}
+<table border="1">
+
+    <thead>
+    <tr>
+        <th>Author name</th>
+        <th>Function</th>
+        <th>*args</th>
+        <th>**kwargs</th>
+        <th>passed?</th>
+        <th>result</th>
+        <th>Exception</th>
+        <th>Runtime (seconds)</th>
+    </tr>
+    </thead>
+
+    <tbody id="table-body">
+
+
+    {% for func_name in data[author] %}
+
+    {% for testcase in data[author][func_name] %}
+
+    <tr style="background: {{"#bbff99" if testcase["passed"] else "#ff9999" }}">
+        <td>{{author}}</td>
+        <td>{{func_name}}</td>
+        <td>{{testcase["args"]}}</td>
+        <td>{{testcase["kwargs"]}}</td>
+        <td>{{testcase["passed"]}}</td>
+        <td>{{testcase["result"]}}</td>
+        <td>{{testcase["exception"]}}</td>
+        <td>{{testcase["runtime_secs"]}}</td>
+    </tr>
+
+    {% endfor %}
+    {% endfor %}
+
+
+    </tbody>
+
+</table>
+{% endfor %}
+
+</body>
+</html>
