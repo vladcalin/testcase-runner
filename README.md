@@ -62,4 +62,4 @@ Next, we want to define some testcases for these files like that:
 
 The outputted example is the following:
 
-![example][./test-case-example.png]
+![example](./test-case-example.png)
