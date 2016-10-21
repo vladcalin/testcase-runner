@@ -1,0 +1,4 @@
+
+
+class TestcaseInitError(Exception):
+    pass
