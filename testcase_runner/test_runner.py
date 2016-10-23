@@ -1,18 +1,30 @@
+import os
+
 from testcase_runner.util import iter_directory_for_sourcefiles
 from testcase_runner.function_util import FunctionDiscoveryStrategy, FunctionTestCase
 
 
 class TestRunner:
-    def __init__(self, source_files, discovery_strategies, test_cases):
-        self.source_files = self.__validate_iterable(source_files, "source_files")
-        self.discovery_strategies = self.__validate_iterable(discovery_strategies, "discovery_strategies")
-        self.__validate_iterable(test_cases, "test_cases")
-        self.discovery_strategies = discovery_strategies
-        self.test_cases = test_cases
-        self.items = {}
+    def __init__(self, target):
+        if os.path.isdir(target):
+            self.source_files = iter_directory_for_sourcefiles(target)
+        elif os.path.isfile(target):
+            self.source_files = [target]
+        else:
+            raise ValueError("Unable to find {}".format(target))
 
-        self.initialize_context()
-        print(self.items)
+        self.discovery_strategies = []
+        self.test_cases = []
+        self.items = {}
+        self._initialized = False
+
+    def add_discovery_strategy(self, strategy):
+        if strategy not in self.discovery_strategies:
+            self.discovery_strategies.append(strategy)
+
+    def add_test_case(self, test_case):
+        if test_case not in self.test_cases:
+            self.test_cases.append(test_case)
 
     def initialize_context(self):
         for strategy in self.discovery_strategies:
@@ -25,6 +37,7 @@ class TestRunner:
                     self.items[author] = items
                 else:
                     self.items[author].extend(items)
+        self._initialized = True
 
     def __validate_iterable(self, iterable, name):
         try:
@@ -37,6 +50,10 @@ class TestRunner:
 
     def get_items_from_strategy(self, sourcefile, strategy):
         return strategy.discover_from_sourcefile(sourcefile)
+
+    def run_cases(self):
+        if not self._initialized:
+            raise RuntimeError("Runner not initialized.")
 
 
 if __name__ == '__main__':
